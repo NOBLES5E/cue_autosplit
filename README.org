@@ -1,3 +1,9 @@
+* Description
+
+This program takes a audio file and split it to ~flac~ files according to a ~cue~
+file. Additionally, it automatically handles the encoding, and rename the split
+files into ~artist - album - title.flac~.
+
 * Requirements
 
 - ~shnsplit~
