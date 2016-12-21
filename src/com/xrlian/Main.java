@@ -126,8 +126,8 @@ public class Main {
                 String encoding = detector.getDetectedCharset();
 
                 if (encoding == null) {
-                    System.out.println("Cannot detect CUE encoding, using ascii");
-                    encoding = "ascii";
+                    System.out.println("Cannot detect CUE encoding, using gbk");
+                    encoding = "gbk";
                 } else {
                     System.out.println("Detected CUE encoding = " + encoding);
                 }

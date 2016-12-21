@@ -7,6 +7,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="916161cf-fb89-40c0-a1fd-7f5417e532ae" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/com/xrlian/Main.java" afterPath="$PROJECT_DIR$/src/com/xrlian/Main.java" />
     </list>
     <ignored path="$PROJECT_DIR$/out/" />
@@ -29,8 +30,8 @@
       <file leaf-file-name="Main.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/com/xrlian/Main.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1024">
-              <caret line="191" column="57" lean-forward="false" selection-start-line="191" selection-start-column="57" selection-end-line="191" selection-end-column="57" />
+            <state relative-caret-position="940">
+              <caret line="129" column="34" lean-forward="false" selection-start-line="129" selection-start-column="34" selection-end-line="129" selection-end-column="34" />
               <folding>
                 <element signature="imports" expanded="true" />
                 <element signature="e#1066#1067#0" expanded="true" />
@@ -41,7 +42,7 @@
                 <element signature="e#2416#2417#0" expanded="true" />
                 <element signature="e#3822#4260#0" expanded="true" />
                 <element signature="e#4259#4260#0" expanded="true" />
-                <element signature="e#6252#6260#0" expanded="true" />
+                <element signature="e#6248#6256#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -694,12 +695,12 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1482296860564</updated>
-      <workItem from="1482296862635" duration="15028000" />
+      <workItem from="1482296862635" duration="15701000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="15028000" />
+    <option name="totallyTimeSpent" value="15701000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="1923" y="33" width="1904" height="2114" extended-state="0" />
@@ -860,8 +861,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/com/xrlian/Main.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1024">
-          <caret line="191" column="57" lean-forward="false" selection-start-line="191" selection-start-column="57" selection-end-line="191" selection-end-column="57" />
+        <state relative-caret-position="940">
+          <caret line="129" column="34" lean-forward="false" selection-start-line="129" selection-start-column="34" selection-end-line="129" selection-end-column="34" />
           <folding>
             <element signature="imports" expanded="true" />
             <element signature="e#1066#1067#0" expanded="true" />
@@ -872,7 +873,7 @@
             <element signature="e#2416#2417#0" expanded="true" />
             <element signature="e#3822#4260#0" expanded="true" />
             <element signature="e#4259#4260#0" expanded="true" />
-            <element signature="e#6252#6260#0" expanded="true" />
+            <element signature="e#6248#6256#0" expanded="true" />
           </folding>
         </state>
       </provider>
