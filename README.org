@@ -16,4 +16,4 @@ Details can be found on [[https://wiki.archlinux.org/index.php/CUE_Splitting][ar
 
 - The char encoding detection might not be correct. If it does not work well,
   you need to create a file ~converted__.cue~ in the same directory with UTF-8
-  encoding in the same directory and then run the program.
+  encoding and then run the program.
