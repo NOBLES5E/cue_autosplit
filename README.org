@@ -2,6 +2,7 @@
 
 - ~shnsplit~
 - ~cuetag.sh~
+- ~iconv~
 
 Details can be found on [[https://wiki.archlinux.org/index.php/CUE_Splitting][archwiki]].
 
