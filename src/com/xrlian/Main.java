@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 class FilesGetter extends SimpleFileVisitor<Path> {
@@ -187,6 +189,7 @@ public class Main {
         }
 
         // rename files
+        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
         for (String generatedAudio : generatedAudios) {
             try {
                 AudioFile f = AudioFileIO.read(new File(generatedAudio));
