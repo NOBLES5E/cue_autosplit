@@ -115,34 +115,41 @@ public class Main {
         };
 
         // convert cue file
-        UniversalDetector detector = new UniversalDetector(null);
         Path convertedCuePath = cuePath.resolveSibling("converted__.cue");
-        try {
-            detector.handleData(Files.readAllBytes(cuePath));
-            detector.dataEnd();
-            String encoding = detector.getDetectedCharset();
-
-            System.out.println("Detected CUE encoding = " + encoding);
-
-            List<String> iconvArguments = new ArrayList<>(Arrays.asList("iconv",
-                    "-f", encoding, "-t", "utf8", cuePath.toString()));
-
+        if (!Files.exists(convertedCuePath)) {
+            UniversalDetector detector = new UniversalDetector(null);
             try {
-                ProcessBuilder iconvProcessBuilder = new ProcessBuilder(iconvArguments);
-                iconvProcessBuilder.directory(startingDir.toFile());
-                iconvProcessBuilder.redirectOutput(convertedCuePath.toFile());
-                Process cuetagProcess = iconvProcessBuilder.start();
+                detector.handleData(Files.readAllBytes(cuePath));
+                detector.dataEnd();
+                String encoding = detector.getDetectedCharset();
+
+                if (encoding == null) {
+                    System.out.println("Cannot detect CUE encoding, using ascii");
+                    encoding = "ascii";
+                } else {
+                    System.out.println("Detected CUE encoding = " + encoding);
+                }
+
+                List<String> iconvArguments = new ArrayList<>(Arrays.asList("iconv",
+                        "-f", encoding, "-t", "utf8", cuePath.toString()));
 
                 try {
-                    cuetagProcess.waitFor();
-                } catch (InterruptedException e) {
+                    ProcessBuilder iconvProcessBuilder = new ProcessBuilder(iconvArguments);
+                    iconvProcessBuilder.directory(startingDir.toFile());
+                    iconvProcessBuilder.redirectOutput(convertedCuePath.toFile());
+                    Process cuetagProcess = iconvProcessBuilder.start();
+
+                    try {
+                        cuetagProcess.waitFor();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                } catch (IOException e) {
                     e.printStackTrace();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         // find generated audios
