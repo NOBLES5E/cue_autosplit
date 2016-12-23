@@ -11,6 +11,7 @@ import org.jaudiotagger.tag.TagException;
 import org.mozilla.universalchardet.UniversalDetector;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -37,71 +38,30 @@ class FilesGetter extends SimpleFileVisitor<Path> {
 public class Main {
     private static final String[] MUSIC_EXTENSIONS = {".ape", ".flac", ".wav"};
 
-    public static void main(String[] args) {
-        // initiate path to traverse
-        Path startingDir = Paths.get(args[0]);
+    private static void cueSplit(Path startingDir) {
 
-        // create audio getter
-        FilesGetter audioGetter = new FilesGetter() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                for (String extension : MUSIC_EXTENSIONS) {
-                    if (path.toString().toLowerCase().endsWith(extension)) {
-                        this.returnPath.add(path);
-                        return FileVisitResult.TERMINATE;
-                    }
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        };
-
-        // create cue getter
-        FilesGetter cueGetter = new FilesGetter() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
-                if (path.toString().toLowerCase().endsWith(".cue")) {
-                    this.returnPath.add(path);
-                    return FileVisitResult.TERMINATE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        };
-
-        // Get the paths for audio and cue
+        Path audioPath = null;
         try {
-            Files.walkFileTree(startingDir, Collections.emptySet(), 1, audioGetter);
-        } catch (IOException e) {
-            e.printStackTrace();
+            audioPath = getAudioPath(startingDir);
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+            System.exit(-1);
         }
 
-        Path audioPath = audioGetter.returnPath.get(0);
-
+        Path cuePath = null;
         try {
-            Files.walkFileTree(startingDir, Collections.emptySet(), 1, cueGetter);
-        } catch (IOException e) {
-            e.printStackTrace();
+            cuePath = getCuePath(startingDir);
+        } catch (FileNotFoundException e) {
+            System.err.println(e.getMessage());
+            System.exit(-1);
         }
 
-        Path cuePath = cueGetter.returnPath.get(0);
-
-        // split
-        List<String> shnsplitArguments = Arrays.asList("shnsplit", "-f", cuePath.toString(), "-o",
-                "flac", "-d", startingDir.toString(), audioPath.toString());
-        System.out.println("Splitting...");
-        System.out.println(shnsplitArguments);
         try {
-            ProcessBuilder shnsplitProcessBuilder = new ProcessBuilder(shnsplitArguments);
-            shnsplitProcessBuilder.directory(startingDir.toFile());
-            shnsplitProcessBuilder.inheritIO();
-            Process shnsplitProcess = shnsplitProcessBuilder.start();
-
-            try {
-                shnsplitProcess.waitFor();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            splitAudioFile(startingDir, audioPath, cuePath);
+        } catch (InterruptedException | IOException e) {
+            System.err.println(e.getMessage());
+            System.err.println("Failed to split the audio file.");
+            System.exit(-1);
         }
 
         // create generated audio getter
@@ -116,55 +76,50 @@ public class Main {
             }
         };
 
-        // convert cue file
-        Path convertedCuePath = cuePath.resolveSibling("converted__.cue");
-        if (!Files.exists(convertedCuePath)) {
-            UniversalDetector detector = new UniversalDetector(null);
-            try {
-                detector.handleData(Files.readAllBytes(cuePath));
-                detector.dataEnd();
-                String encoding = detector.getDetectedCharset();
-
-                if (encoding == null) {
-                    System.out.println("Cannot detect CUE encoding, using gbk");
-                    encoding = "gbk";
-                } else {
-                    System.out.println("Detected CUE encoding = " + encoding);
-                }
-
-                List<String> iconvArguments = new ArrayList<>(Arrays.asList("iconv",
-                        "-f", encoding, "-t", "utf8", cuePath.toString()));
-
-                try {
-                    ProcessBuilder iconvProcessBuilder = new ProcessBuilder(iconvArguments);
-                    iconvProcessBuilder.directory(startingDir.toFile());
-                    iconvProcessBuilder.redirectOutput(convertedCuePath.toFile());
-                    Process cuetagProcess = iconvProcessBuilder.start();
-
-                    try {
-                        cuetagProcess.waitFor();
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+        Path convertedCuePath = null;
+        try {
+            convertedCuePath = getConvertedCue(startingDir, cuePath);
+        } catch (InterruptedException | IOException e) {
+            System.err.println(e.getMessage());
+            System.err.println("Failed to convert the cue file.");
+            System.exit(-1);
         }
 
         // find generated audios
         try {
             Files.walkFileTree(startingDir, Collections.emptySet(), 1, generatedAudioGetter);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Failed to find the generated audio files.");
+            System.exit(-1);
         }
 
         List<String> generatedAudios = generatedAudioGetter.returnPath.stream().map(e -> e.toString()).collect(Collectors.toList());
         generatedAudios.sort(Comparator.<String>naturalOrder());
 
+        tagGeneratedFiles(startingDir, convertedCuePath, generatedAudios);
+        renameAudioFilesUsingTag(generatedAudios);
+    }
 
+    private static void renameAudioFilesUsingTag(List<String> generatedAudios) {
+        // rename files
+        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
+        for (String generatedAudio : generatedAudios)
+            try {
+                AudioFile f = AudioFileIO.read(new File(generatedAudio));
+                Tag tag = f.getTag();
+                String artist = tag.getFirst(FieldKey.ARTIST);
+                String album = tag.getFirst(FieldKey.ALBUM);
+                String title = tag.getFirst(FieldKey.TITLE);
+                Path sourcePath = new File(generatedAudio).toPath();
+                Files.move(sourcePath, sourcePath.resolveSibling(artist + " -  " +
+                        album + " - " + title + ".flac"));
+            } catch (CannotReadException | IOException | TagException | InvalidAudioFrameException | ReadOnlyFileException e) {
+                System.err.println("Cannot run jaudiotagger to rename files.");
+                System.exit(-1);
+            }
+    }
+
+    private static void tagGeneratedFiles(Path startingDir, Path convertedCuePath, List<String> generatedAudios) {
         // add tags
         List<String> cuetagArguments = new ArrayList<>(Arrays.asList("cuetag.sh", convertedCuePath.toString()));
 
@@ -182,36 +137,148 @@ public class Main {
             try {
                 cuetagProcess.waitFor();
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.err.println("Cannot run cuetag.sh.");
+                System.exit(-1);
             }
+        } catch (IOException e) {
+            System.err.println("cuetag.sh cannot chdir to the directory specified.");
+            System.exit(-1);
+        }
+    }
+
+    private static Path getConvertedCue(Path startingDir, Path cuePath) throws InterruptedException, IOException {
+        // convert cue file
+        Path convertedCuePath = cuePath.resolveSibling("converted__.cue");
+        if (!Files.exists(convertedCuePath)) {
+            UniversalDetector detector = new UniversalDetector(null);
+
+            try {
+                detector.handleData(Files.readAllBytes(cuePath));
+            } catch (IOException e) {
+                throw new IOException("Cannot read the cue file.");
+            }
+
+            detector.dataEnd();
+            String encoding = detector.getDetectedCharset();
+
+            if (encoding == null) {
+                System.out.println("Cannot detect CUE encoding, using gbk");
+                encoding = "gbk";
+            } else {
+                System.out.println("Detected CUE encoding = " + encoding);
+            }
+
+            List<String> iconvArguments = new ArrayList<>(Arrays.asList("iconv",
+                    "-f", encoding, "-t", "utf8", cuePath.toString()));
+
+            try {
+                ProcessBuilder iconvProcessBuilder = new ProcessBuilder(iconvArguments);
+                iconvProcessBuilder.directory(startingDir.toFile());
+                iconvProcessBuilder.redirectOutput(convertedCuePath.toFile());
+                Process cuetagProcess = iconvProcessBuilder.start();
+
+                try {
+                    cuetagProcess.waitFor();
+                } catch (InterruptedException e) {
+                    throw new InterruptedException("Failed to run iconv.");
+                }
+            } catch (IOException e) {
+                throw new IOException("iconv failed to chdir to the directory specified.");
+            }
+        }
+        return convertedCuePath;
+    }
+
+    private static void splitAudioFile(Path startingDir, Path audioPath, Path cuePath) throws InterruptedException, IOException {
+        // split
+        List<String> shnsplitArguments = Arrays.asList("shnsplit", "-f", cuePath.toString(), "-o",
+                "flac", "-d", startingDir.toString(), audioPath.toString());
+        System.out.println("Splitting...");
+        System.out.println(shnsplitArguments);
+        try {
+            ProcessBuilder shnsplitProcessBuilder = new ProcessBuilder(shnsplitArguments);
+            shnsplitProcessBuilder.directory(startingDir.toFile());
+            shnsplitProcessBuilder.inheritIO();
+            Process shnsplitProcess = shnsplitProcessBuilder.start();
+
+            try {
+                shnsplitProcess.waitFor();
+            } catch (InterruptedException e) {
+                throw new InterruptedException("Cannot split the audio file.");
+            }
+        } catch (IOException e) {
+            throw new IOException("shnsplit cannot chdir to the directory specified.");
+        }
+    }
+
+    private static Path getCuePath(Path startingDir) throws FileNotFoundException {
+        // create cue getter
+        FilesGetter cueGetter = new FilesGetter() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                if (path.toString().toLowerCase().endsWith(".cue")) {
+                    this.returnPath.add(path);
+                    return FileVisitResult.TERMINATE;
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        };
+
+
+        try {
+            Files.walkFileTree(startingDir, Collections.emptySet(), 1, cueGetter);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
-        // rename files
-        Logger.getLogger("org.jaudiotagger").setLevel(Level.OFF);
-        for (String generatedAudio : generatedAudios) {
-            try {
-                AudioFile f = AudioFileIO.read(new File(generatedAudio));
-                Tag tag = f.getTag();
-                String artist = tag.getFirst(FieldKey.ARTIST);
-                String album = tag.getFirst(FieldKey.ALBUM);
-                String title = tag.getFirst(FieldKey.TITLE);
-                Path sourcePath = new File(generatedAudio).toPath();
-                Files.move(sourcePath, sourcePath.resolveSibling(artist + " -  " +
-                        album + " - " + title + ".flac"));
-            } catch (CannotReadException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            } catch (TagException e) {
-                e.printStackTrace();
-            } catch (ReadOnlyFileException e) {
-                e.printStackTrace();
-            } catch (InvalidAudioFrameException e) {
-                e.printStackTrace();
-            }
+        if (cueGetter.returnPath.size() == 0) {
+            throw new FileNotFoundException("Not cue file found.");
         }
+
+        Path audioPath = cueGetter.returnPath.get(0);
+        return audioPath;
+    }
+
+    private static Path getAudioPath(Path startingDir) throws FileNotFoundException {
+        // create audio getter
+        FilesGetter audioGetter = new FilesGetter() {
+            @Override
+            public FileVisitResult visitFile(Path path, BasicFileAttributes basicFileAttributes) throws IOException {
+                for (String extension : MUSIC_EXTENSIONS) {
+                    if (path.toString().toLowerCase().endsWith(extension)) {
+                        this.returnPath.add(path);
+                        return FileVisitResult.TERMINATE;
+                    }
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        };
+
+        // Get the paths for audio and cue
+        try {
+            Files.walkFileTree(startingDir, Collections.emptySet(), 1, audioGetter);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        if (audioGetter.returnPath.size() == 0) {
+            throw new FileNotFoundException("Not audio file found.");
+        }
+
+        return audioGetter.returnPath.get(0);
+    }
+
+    public static void main(String[] args) {
+        // initiate path to traverse
+        try {
+            Path startingDir = Paths.get(args[0]);
+            cueSplit(startingDir);
+
+        } catch (ArrayIndexOutOfBoundsException e) {
+            System.err.println("Please pass the directory where the files are located in.");
+            System.exit(-1);
+        }
+
     }
 
 }
