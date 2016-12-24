@@ -273,12 +273,9 @@ public class Main {
         try {
             Path startingDir = Paths.get(args[0]);
             cueSplit(startingDir);
-
         } catch (ArrayIndexOutOfBoundsException e) {
             System.err.println("Please pass the directory where the files are located in.");
             System.exit(-1);
         }
-
     }
-
 }
