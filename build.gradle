@@ -1,0 +1,27 @@
+apply plugin: 'java'
+
+version = "0.1.0"
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'org:jaudiotagger:2.0.3'
+    compile 'com.github.albfernandez:juniversalchardet:2.0.0'
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'com.xrlian.Main'
+    }
+}
