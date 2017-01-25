@@ -17,7 +17,7 @@ Details can be found on [[https://wiki.archlinux.org/index.php/CUE_Splitting][ar
 - Run ~gradle installDist~ and find the executable in ~build/install~
 - Create a new directory and ~cd~ into it
 - Move the ~cue~ file and audio file into the directory
-- Run ~java -jar cue_autosplit.jar .~
+- Run the program and run ~split <path-to-the-directory>~ in the new shell
 
 * Caveats
 
