@@ -1,5 +1,6 @@
-package com.xrlian;
+package com.xrlian.service.serviceimpl;
 
+import com.xrlian.service.CueAutoSplitService;
 import org.jaudiotagger.audio.AudioFile;
 import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.exceptions.CannotReadException;
@@ -9,11 +10,15 @@ import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagException;
 import org.mozilla.universalchardet.UniversalDetector;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.logging.Level;
@@ -35,8 +40,15 @@ class FilesGetter extends SimpleFileVisitor<Path> {
     }
 }
 
-public class Main {
+@Service
+public class CueAutoSplitServiceImpl implements CueAutoSplitService {
+
     private static final String[] MUSIC_EXTENSIONS = {".ape", ".flac", ".wav"};
+
+    @Override
+    public void splitAudioInPath(Path path) {
+
+    }
 
     private static void cueSplit(Path startingDir) {
 
@@ -266,16 +278,5 @@ public class Main {
         }
 
         return audioGetter.returnPath.get(0);
-    }
-
-    public static void main(String[] args) {
-        // initiate path to traverse
-        try {
-            Path startingDir = Paths.get(args[0]);
-            cueSplit(startingDir);
-        } catch (ArrayIndexOutOfBoundsException e) {
-            System.err.println("Please pass the directory where the files are located in.");
-            System.exit(-1);
-        }
     }
 }

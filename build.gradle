@@ -1,27 +1,44 @@
 apply plugin: 'java'
+apply plugin: 'application'
 
 version = "0.1.0"
 sourceCompatibility = 1.8
 
 repositories {
     mavenCentral()
+    maven {
+        url 'https://repo.spring.io/libs-milestone'
+    }
 }
 
 dependencies {
     compile 'org:jaudiotagger:2.0.3'
     compile 'com.github.albfernandez:juniversalchardet:2.0.0'
+    compile 'org.springframework.shell:spring-shell:1.2.0.M1'
 }
 
 sourceSets {
     main {
         java {
-            srcDir 'src'
+            srcDir 'src/main/java'
+        }
+        resources {
+            srcDirs = ['src/main/resources']
         }
     }
 }
 
-jar {
-    manifest {
-        attributes 'Main-Class': 'com.xrlian.Main'
-    }
+mainClassName = 'org.springframework.shell.Bootstrap'
+
+run {
+    standardInput = System.in
 }
+
+//jar {
+//    manifest {
+//        attributes 'Main-Class': mainClassName
+//    }
+//    from {
+//        configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+//    }
+//}
